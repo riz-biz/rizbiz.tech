@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Mark Entry</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        // Paste the entire GoogleSheetInterface component code here
+        import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDcGXSxXxxbKnGQnXyR5talLNR5opOjRlRHFai4zzydGUy8Re65PhNuRXzDp3GFKnW/exec';
+
+const GoogleSheetInterface = () => {
+  const [students, setStudents] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [mark, setMark] = useState('');
+
+  const fetchData = async () => {
+    try {
+      const response = await fetch(`${SCRIPT_URL}?action=read`);
+      const data = await response.json();
+      const formattedData = data.slice(1).map(([name, mark]) => ({ name, mark })); // Skip header row
+      setStudents(formattedData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const saveData = async (name, mark) => {
+    try {
+      const rowIndex = students.findIndex(student => student.name === name) + 2; // +2 because Google Sheets is 1-indexed and we have a header row
+      await fetch(`${SCRIPT_URL}?action=write&row=${rowIndex}&col=2&value=${mark}`);
+      setStudents(prevStudents => 
+        prevStudents.map(student => 
+          student.name === name ? {...student, mark} : student
+        )
+      );
+    } catch (error) {
+      console.error('Error saving data:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleSubmit = () => {
+    if (mark) {
+      saveData(students[currentIndex].name, mark);
+      setMark('');
+      setCurrentIndex(prevIndex => (prevIndex + 1) % students.length);
+    }
+  };
+
+  if (students.length === 0) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Enter Student Marks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <h2 className="text-xl font-bold mb-4">{students[currentIndex].name}</h2>
+          <Input
+            type="number"
+            placeholder="Enter mark"
+            value={mark}
+            onChange={(e) => setMark(e.target.value)}
+            className="mb-4"
+          />
+          <Button onClick={handleSubmit} className="w-full">
+            Submit
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default GoogleSheetInterface;
+        ReactDOM.render(<GoogleSheetInterface />, document.getElementById('root'));
+    </script>
+</body>
+</html>
