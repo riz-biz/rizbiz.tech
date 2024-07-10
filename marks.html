@@ -3,94 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Mark Entry</title>
+    <title>Student Mark Entry (Debug)</title>
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .card-title {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+        .student-name {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #5c67f2;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #ccc;
+        }
+        .error {
+            color: red;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        // Paste the entire GoogleSheetInterface component code here
-        import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDcGXSxXxxbKnGQnXyR5talLNR5opOjRlRHFai4zzydGUy8Re65PhNuRXzDp3GFKnW/exec';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDcGXSxXxxbKnGQnXyR5talLNR5opOjRlRHFai4zzydGUy8Re65PhNuRXzDp3GFKnW/exec';
+        const GoogleSheetInterface = () => {
+            const [students, setStudents] = React.useState([]);
+            const [currentIndex, setCurrentIndex] = React.useState(0);
+            const [mark, setMark] = React.useState('');
+            const [error, setError] = React.useState(null);
 
-const GoogleSheetInterface = () => {
-  const [students, setStudents] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [mark, setMark] = useState('');
+            const fetchData = async () => {
+                try {
+                    const response = await fetch(`${SCRIPT_URL}?action=read`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    const formattedData = data.slice(1).map(([name, mark]) => ({ name, mark }));
+                    setStudents(formattedData);
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                    setError('Failed to load student data. Please check the console for more information.');
+                }
+            };
 
-  const fetchData = async () => {
-    try {
-      const response = await fetch(`${SCRIPT_URL}?action=read`);
-      const data = await response.json();
-      const formattedData = data.slice(1).map(([name, mark]) => ({ name, mark })); // Skip header row
-      setStudents(formattedData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
+            const saveData = async (name, mark) => {
+                try {
+                    const rowIndex = students.findIndex(student => student.name === name) + 2;
+                    const response = await fetch(`${SCRIPT_URL}?action=write&row=${rowIndex}&col=2&value=${mark}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    setStudents(prevStudents => 
+                        prevStudents.map(student => 
+                            student.name === name ? {...student, mark} : student
+                        )
+                    );
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                    setError('Failed to save mark. Please try again.');
+                }
+            };
 
-  const saveData = async (name, mark) => {
-    try {
-      const rowIndex = students.findIndex(student => student.name === name) + 2; // +2 because Google Sheets is 1-indexed and we have a header row
-      await fetch(`${SCRIPT_URL}?action=write&row=${rowIndex}&col=2&value=${mark}`);
-      setStudents(prevStudents => 
-        prevStudents.map(student => 
-          student.name === name ? {...student, mark} : student
-        )
-      );
-    } catch (error) {
-      console.error('Error saving data:', error);
-    }
-  };
+            React.useEffect(() => {
+                fetchData();
+            }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+            const handleSubmit = () => {
+                if (mark) {
+                    saveData(students[currentIndex].name, mark);
+                    setMark('');
+                    setCurrentIndex(prevIndex => (prevIndex + 1) % students.length);
+                }
+            };
 
-  const handleSubmit = () => {
-    if (mark) {
-      saveData(students[currentIndex].name, mark);
-      setMark('');
-      setCurrentIndex(prevIndex => (prevIndex + 1) % students.length);
-    }
-  };
+            if (error) {
+                return <div className="container">Error: {error}</div>;
+            }
 
-  if (students.length === 0) {
-    return <div>Loading...</div>;
-  }
+            if (students.length === 0) {
+                return <div className="container">Loading... If this persists, please check the console for errors.</div>;
+            }
 
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Enter Student Marks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <h2 className="text-xl font-bold mb-4">{students[currentIndex].name}</h2>
-          <Input
-            type="number"
-            placeholder="Enter mark"
-            value={mark}
-            onChange={(e) => setMark(e.target.value)}
-            className="mb-4"
-          />
-          <Button onClick={handleSubmit} className="w-full">
-            Submit
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
+            return (
+                <div className="container">
+                    <div className="card">
+                        <div className="card-header">
+                            <h1 className="card-title">Enter Student Marks</h1>
+                        </div>
+                        <div className="card-content">
+                            <h2 className="student-name">{students[currentIndex].name}</h2>
+                            <input
+                                type="number"
+                                placeholder="Enter mark"
+                                value={mark}
+                                onChange={(e) => setMark(e.target.value)}
+                            />
+                            <button onClick={handleSubmit} disabled={!mark}>Submit</button>
+                            {error && <div className="error">{error}</div>}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
-export default GoogleSheetInterface;
         ReactDOM.render(<GoogleSheetInterface />, document.getElementById('root'));
     </script>
 </body>
