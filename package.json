@@ -1,0 +1,12 @@
+{
+  "name": "student-marks-submission",
+  "version": "1.0.0",
+  "description": "A simple web app to submit student marks and store them in a Google Sheet",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
