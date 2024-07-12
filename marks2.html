@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student Marks Submission</title>
+  <link href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" rel="stylesheet">
+  <style>
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>Student Marks Submission</strong></li>
+    </ul>
+  </nav>
+
+  <main class="container">
+    <div class="grid">
+      <section>
+        <hgroup>
+          <h2>Submit Marks</h2>
+          <h3 id="studentNameHeader">Loading student names...</h3>
+        </hgroup>
+        <form id="marksForm" class="grid hidden">
+          <label for="studentMarks">Marks:</label>
+          <input type="number" id="studentMarks" name="studentMarks" placeholder="Enter Marks" required>
+          <button type="submit">Submit</button>
+        </form>
+        <p id="responseMessage"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="container">
+    <small><a href="#">Home</a> • <a href="#">Contact</a></small>
+  </footer>
+
+  <script>
+    const sheetDBApi = 'https://sheetdb.io/api/v1/sr847fdd0tl1k';
+    let studentNames = [];
+    let currentStudentIndex = 0;
+
+    // Fetch student names from Google Sheet
+    function fetchStudentNames() {
+      fetch(sheetDBApi)
+        .then(response => response.json())
+        .then(data => {
+          studentNames = data.map(item => item.name);
+          if (studentNames.length > 0) {
+            document.getElementById('studentNameHeader').textContent = `Enter marks for: ${studentNames[currentStudentIndex]}`;
+            document.getElementById('marksForm').classList.remove('hidden');
+          } else {
+            document.getElementById('studentNameHeader').textContent = 'No student names found.';
+          }
+        })
+        .catch(error => {
+          document.getElementById('studentNameHeader').textContent = 'Error loading student names.';
+        });
+    }
+
+    // Submit marks to Google Sheet
+    document.getElementById('marksForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const studentMarks = document.getElementById('studentMarks').value;
+      const studentName = studentNames[currentStudentIndex];
+
+      fetch(sheetDBApi, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          data: {
+            name: studentName,
+            marks: studentMarks
+          }
+        })
+      })
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('responseMessage').textContent = 'Marks submitted successfully!';
+          currentStudentIndex++;
+          if (currentStudentIndex < studentNames.length) {
+            document.getElementById('studentNameHeader').textContent = `Enter marks for: ${studentNames[currentStudentIndex]}`;
+            document.getElementById('studentMarks').value = '';
+          } else {
+            document.getElementById('studentNameHeader').textContent = 'All students have been graded.';
+            document.getElementById('marksForm').classList.add('hidden');
+          }
+        })
+        .catch(error => {
+          document.getElementById('responseMessage').textContent = 'Error submitting marks. Please try again.';
+        });
+    });
+
+    // Initial fetch
+    fetchStudentNames();
+  </script>
+</body>
+
+</html>
