@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Splitwise Expense Report</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            line-height: 1.5;
+            background: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+            z-index: -1;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            padding: 2rem 1rem;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+        }
+        
+        .header h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: white;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            font-weight: 300;
+            color: white;
+        }
+        
+        .content {
+            padding: 1rem;
+        }
+        
+        .section {
+            margin-bottom: 2rem;
+        }
+        
+        .section h2 {
+            color: #1e293b;
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 2px solid #6366f1;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .expense-item {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #6366f1;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .expense-item:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+        }
+        
+        .expense-header {
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+        }
+        
+        .expense-details {
+            color: #64748b;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            line-height: 1.4;
+        }
+        
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .summary-table th {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            padding: 1rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+        
+        .summary-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+        }
+        
+        .summary-table tr:hover {
+            background: #f8fafc;
+        }
+        
+        .summary-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .debt-item {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            backdrop-filter: blur(5px);
+            color: white;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 8px;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .debt-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+        
+        .debt-amount {
+            font-size: clamp(1rem, 4vw, 1.2rem);
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+        
+        .total-summary {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 2rem;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+            color: white;
+        }
+        
+        .total-summary h3 {
+            font-size: clamp(1.1rem, 4vw, 1.3rem);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .print-btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+            font-weight: 600;
+            margin: 2rem auto;
+            display: block;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+        }
+        
+        .print-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+        }
+        
+        .print-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+            .content {
+                padding: 0.75rem;
+            }
+            
+            .summary-table {
+                font-size: 0.8rem;
+            }
+            
+            .summary-table th,
+            .summary-table td {
+                padding: 0.5rem 0.375rem;
+            }
+            
+            .expense-item {
+                padding: 0.75rem;
+            }
+            
+            .debt-item {
+                padding: 0.875rem;
+            }
+            
+            .header {
+                padding: 1.5rem 0.75rem;
+            }
+        }
+        
+        /* Tablet and up */
+        @media (min-width: 768px) {
+            .container {
+                max-width: 900px;
+                margin: 2rem auto;
+                border-radius: 24px;
+                min-height: auto;
+            }
+            
+            .content {
+                padding: 2rem;
+            }
+            
+            .header {
+                padding: 3rem 2rem;
+                border-radius: 24px 24px 0 0;
+            }
+        }
+        
+        @media print {
+            body {
+                background: white;
+                color: black;
+            }
+            body::before {
+                display: none;
+            }
+            .container {
+                background: white;
+                backdrop-filter: none;
+                border: none;
+                box-shadow: none;
+                max-width: none;
+                margin: 0;
+                border-radius: 0;
+            }
+            .print-btn {
+                display: none;
+            }
+            .header {
+                background: #9333ea;
+                backdrop-filter: none;
+            }
+            .expense-item, .debt-item, .total-summary, .summary-table {
+                backdrop-filter: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💰 Group Expense Report</h1>
+            <p>Settlement Summary & Debt Simplification</p>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <h2>📋 Expense Breakdown</h2>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🚗 1. Auto IITG to Ghat (Dorothy)</div>
+                    <div class="expense-details">Amount: ₹60 | Split equally among 6 people | ₹10 per person</div>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🍺 2. Alcohol 1 (Akash)</div>
+                    <div class="expense-details">
+                        • 5 Budweiser Magnum @ ₹200 each = ₹1,000<br>
+                        • 1 Corona for Mansi @ ₹150<br>
+                        • Total: ₹1,150 (Unequal split)
+                    </div>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🍿 3. Snacks 1 (Dorothy)</div>
+                    <div class="expense-details">Amount: ₹160 | Split equally among 6 people | ₹26.67 per person</div>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🥃 4. Alcohol 2 (Suman)</div>
+                    <div class="expense-details">
+                        • Signature Whiskey ₹480 for 5 people (all except Rishabh) @ ₹96 each<br>
+                        • 1 Budweiser Magnum for Rishabh @ ₹200<br>
+                        • Total: ₹680 (Unequal split)
+                    </div>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🥨 5. Snacks 2 (Akash)</div>
+                    <div class="expense-details">Amount: ₹80 | Split equally among 6 people | ₹13.33 per person</div>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🚕 6. Auto Ghat to IITG (Krishna)</div>
+                    <div class="expense-details">Amount: ₹120 | Split equally among 6 people | ₹20 per person</div>
+                </div>
+                
+                <div style="border-top: 2px dashed #6366f1; margin: 2rem 0; text-align: center; padding-top: 1rem;">
+                    <span style="background: #f8fafc; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 600; color: #475569;">Additional Expenses</span>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🧃 7. Juices (Akash)</div>
+                    <div class="expense-details">
+                        • For Rishabh: ₹45 Mango shake + ₹20 Paper Boat = ₹65<br>
+                        • For Dorothy: ₹45 Mango shake<br>
+                        • For Mansi: ₹30 Mango shake + ₹20 Paper Boat + ₹20 Lahori zeera = ₹70<br>
+                        • Total: ₹180 (Individual expenses)
+                    </div>
+                </div>
+                
+                <div class="expense-item">
+                    <div class="expense-header">🍜 8. Maggi (Mansi)</div>
+                    <div class="expense-details">Amount: ₹30 for Akash only</div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>👥 Individual Balance Summary</h2>
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Person</th>
+                            <th>Paid</th>
+                            <th>Owes</th>
+                            <th>Net Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Akash</strong></td>
+                            <td>₹1,410</td>
+                            <td>₹396</td>
+                            <td style="color: #16a34a; font-weight: bold;">+₹1,014 (To Receive)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Dorothy</strong></td>
+                            <td>₹220</td>
+                            <td>₹411</td>
+                            <td style="color: #dc2626; font-weight: bold;">-₹191 (To Pay)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Krishna</strong></td>
+                            <td>₹120</td>
+                            <td>₹366</td>
+                            <td style="color: #dc2626; font-weight: bold;">-₹246 (To Pay)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Mansi</strong></td>
+                            <td>₹30</td>
+                            <td>₹386</td>
+                            <td style="color: #dc2626; font-weight: bold;">-₹356 (To Pay)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Rishabh</strong></td>
+                            <td>₹0</td>
+                            <td>₹535</td>
+                            <td style="color: #dc2626; font-weight: bold;">-₹535 (To Pay)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Suman</strong></td>
+                            <td>₹680</td>
+                            <td>₹366</td>
+                            <td style="color: #16a34a; font-weight: bold;">+₹314 (To Receive)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>🔄 Simplified Debt Settlement</h2>
+                
+                <div class="debt-item">
+                    <strong>Rishabh</strong> pays <strong>Akash</strong>
+                    <div class="debt-amount">₹535</div>
+                </div>
+                
+                <div class="debt-item">
+                    <strong>Mansi</strong> pays <strong>Akash</strong>
+                    <div class="debt-amount">₹356</div>
+                </div>
+                
+                <div class="debt-item">
+                    <strong>Krishna</strong> pays <strong>Akash</strong>
+                    <div class="debt-amount">₹246</div>
+                </div>
+                
+                <div class="debt-item">
+                    <strong>Dorothy</strong> pays <strong>Akash</strong>
+                    <div class="debt-amount">₹191</div>
+                </div>
+                
+                <div class="debt-item">
+                    <strong>Akash</strong> pays <strong>Suman</strong>
+                    <div class="debt-amount">₹314</div>
+                </div>
+            </div>
+            
+            <div class="total-summary">
+                <h3>📊 Total Group Expenses</h3>
+                <div style="font-size: clamp(1.5rem, 6vw, 2rem); font-weight: bold; margin: 10px 0;">₹2,460</div>
+                <div style="font-size: clamp(0.9rem, 3vw, 1rem);">Average per person: ₹410</div>
+            </div>
+            
+            <button class="print-btn" onclick="window.print()">🖨️ Print Report</button>
+        </div>
+    </div>
+    <script>
+        // Add some interactive features
+        document.addEventListener('DOMContentLoaded', function() {
+            const debtItems = document.querySelectorAll('.debt-item');
+            debtItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    this.style.transform = 'scale(1.05)';
+                    setTimeout(() => {
+                        this.style.transform = 'scale(1)';
+                    }, 200);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
